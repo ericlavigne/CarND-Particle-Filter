@@ -24,7 +24,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   weights.clear();
   particles.clear();
 
-  default_random_engine gen;
+  static default_random_engine gen;
   normal_distribution<double> xdist(x,std[0]);
   normal_distribution<double> ydist(y,std[1]);
   normal_distribution<double> thetadist(theta,std[2]);
@@ -46,7 +46,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
-  default_random_engine gen;
+  static default_random_engine gen;
   normal_distribution<double> v_dist(velocity,std_pos[0]);
   normal_distribution<double> thetad_dist(yaw_rate,std_pos[1]);
   for(int i = 0; i < num_particles; i++) {
