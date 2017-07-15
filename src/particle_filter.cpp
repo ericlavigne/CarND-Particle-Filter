@@ -20,7 +20,9 @@
 using namespace std;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
-  num_particles = 1000;
+  // cout << endl << "init(x:" << x << " y:" << y << " theta:" << theta << " std:" << std[0] << "/" << std[1] << ")" << endl;
+
+  num_particles = 20;
   weights.clear();
   particles.clear();
 
@@ -41,11 +43,15 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     p.sense_y.clear();
     particles.push_back(p);
     weights.push_back(p.weight);
+    // cout << "  |p" << p.id << "| x:" << p.x << " y:" << p.y << " theta:" << p.theta << endl;
   }
   is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
+  // cout << endl << "prediction(dt:" << delta_t << " v:" << velocity << " thetad:" << yaw_rate << " std:" << std_pos[0] << "/" << std_pos[1] << ")" << endl;
+
+
   static default_random_engine gen;
   normal_distribution<double> v_dist(velocity,std_pos[0]);
   normal_distribution<double> thetad_dist(yaw_rate,std_pos[1]);
@@ -55,27 +61,13 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     particles[i].x += (v / thetad) * (sin(particles[i].theta + thetad * delta_t) - sin(particles[i].theta));
     particles[i].y += (- v / thetad) * (cos(particles[i].theta + thetad * delta_t) - cos(particles[i].theta));
     particles[i].theta += thetad * delta_t;
+    // cout << "  |p" << particles[i].id << "| x:" << particles[i].x << " y:" << particles[i].y << " theta:" << particles[i].theta
+    //      << " (v:" << v << " thetad:" << thetad << ")" << endl;
   }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
-	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
-	//   observed measurement to this particular landmark.
-	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
-	//   implement this method and use it as a helper during the updateWeights phase.
-  for(int i = 0; i < observations.size(); i++) {
-    int closest_prediction_id = -1;
-    double closest_prediction_distance = 10000.0;
-    LandmarkObs o = observations[i];
-    for(int j = 0; j < predicted.size(); j++) {
-      LandmarkObs p = predicted[j];
-      double distance = sqrt(pow(o.x - p.x, 2) + pow(o.y - p.y, 2));
-      if(distance < closest_prediction_distance) {
-        closest_prediction_distance = distance;
-        closest_prediction_id = p.id;
-      }
-    }
-  }
+	// Unused function. Left in place so that project compiles without changing particle_filter.h
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
@@ -83,6 +75,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   double std_range = std_landmark[0];
   double std_bearing = std_landmark[1];
   double range_squared = pow(sensor_range*1.2 + (10*std_range), 2);
+
+  // cout << endl << "updateWeights(sensor_range:" << sensor_range << " std_range:" << std_range << " std_bearing:" << std_bearing << ")" << endl;
 
   vector<double> observation_distances;
   vector<double> observation_bearings;
@@ -100,7 +94,6 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     Particle part = particles[i];
     particles[i].weight = 1.0;
     particles[i].associations.clear();
-    double particle_bearing = atan2(part.y,part.x);
 
     vector<Map::single_landmark_s> part_landmarks;
     vector<double> landmark_distances;
@@ -115,13 +108,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         part_landmarks.push_back(lm);
         // Represent landmarks as distance and bearing with respect to the particle.
         landmark_distances.push_back(sqrt(lm_distance_squared));
-        double landmark_bearing = atan2(lm.y_f,lm.x_f) - particle_bearing;
+        double landmark_bearing = atan2(lm.y_f - part.y, lm.x_f - part.x) - part.theta;
         if(landmark_bearing > M_PI) landmark_bearing -= 2 * M_PI;
         if(landmark_bearing < -M_PI) landmark_bearing += 2 * M_PI;
         landmark_bearings.push_back(landmark_bearing);
       }
     }
 
+    // cout << "  |p" << part.id << "| x:" << part.x << " y:" << part.y << " theta:" << part.theta << endl;
     for(int j = 0; j < observations.size(); j++) {
       int closest_id = -1;
       double closest_dist_stdev = 15.0;
