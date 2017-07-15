@@ -58,8 +58,15 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
   for(int i = 0; i < num_particles; i++) {
     double v = v_dist(gen);
     double thetad = thetad_dist(gen);
-    particles[i].x += (v / thetad) * (sin(particles[i].theta + thetad * delta_t) - sin(particles[i].theta));
-    particles[i].y += (- v / thetad) * (cos(particles[i].theta + thetad * delta_t) - cos(particles[i].theta));
+    if(fabs(thetad) > 0.001) {
+      // For medium to high curvature, model as circular motion
+      particles[i].x += (v / thetad) * (sin(particles[i].theta + thetad * delta_t) - sin(particles[i].theta));
+      particles[i].y += (-v / thetad) * (cos(particles[i].theta + thetad * delta_t) - cos(particles[i].theta));
+    } else {
+      // For very low curvature, model as straight line
+      particles[i].x += v * delta_t * cos(particles[i].theta);
+      particles[i].y += v * delta_t * sin(particles[i].theta);
+    }
     particles[i].theta += thetad * delta_t;
     // cout << "  |p" << particles[i].id << "| x:" << particles[i].x << " y:" << particles[i].y << " theta:" << particles[i].theta
     //      << " (v:" << v << " thetad:" << thetad << ")" << endl;
